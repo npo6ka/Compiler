@@ -25,12 +25,12 @@ int main() {
 }
 
 /*
-const ::= INT FLOAT 			        ('0'-'9', '+/-', '.')
+const ::= INT FLOAT                     ('0'-'9', '+/-', '.')
 AsExp ::= = *= /= += -=                 ('=', '*', '/', '+', '-')
-LoExp ::= || && | &			            (|, &)
-Indef ::= ID 				            ('a'-'z', 'A'-'Z', '_', '$')
-ResWr ::= if else for in return with 	('i','e','f','i','r','w')
-SpeCh ::= { } ( ) ; \0 \n _ 	    	('{','}','(',')',';',' ','\n','\0')
+LoExp ::= || && | &                     (|, &)
+Indef ::= ID                            ('a'-'z', 'A'-'Z', '_', '$')
+ResWr ::= if else for in return with    ('i','e','f','i','r','w')
+SpeCh ::= { } ( ) ; \0 \n _             ('{','}','(',')',';',' ','\n','\0')
 
 01010000
 hsdfsdfdfsdf d h g ddfg i sdfsd
