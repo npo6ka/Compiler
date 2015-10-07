@@ -20,9 +20,9 @@ char* FillTable(const string str[], char *cash, const int num) {
     return cash;
 }
 
-void AssignClass(const char* const cash, const char* c, int *ClassLex) {
-    if (*ClassLex == 0 || *ClassLex == -1) {
-        *ClassLex = cash[*c];
+void AssignClass(const char* const cash, const char c, int &ClassLex) {
+    if (ClassLex == 0 || ClassLex == -1) {
+        ClassLex = cash[c];
     }
 }
 
@@ -162,15 +162,15 @@ int Handler(char ch, int ClassLex, int stat, filebuf  &file, string &str) {
 
 }
 
-void ProcessingStatus(int *stat, int *ClassLex, string &str) {
+void ProcessingStatus(int &stat, int &ClassLex, string &str) {
     
-    if (*stat > 7) {
-        cout << "lexem found:" << *ClassLex << "    '" <<  str << "'" << endl;
+    if (stat > 7) {
+        cout << "lexem found:" << ClassLex << "    '" <<  str << "'" << endl;
         str = "";
-        *ClassLex = 0;
-        *stat = 0;
+        ClassLex = 0;
+        stat = 0;
     } else {
-       
+        
     }
 }
 
@@ -204,9 +204,9 @@ int main() {
 
     do {
         symbol = inbuf->sbumpc(); //c = inbuf->sputbackc(c);
-        AssignClass(cash, &symbol, &ClassLexems);
+        AssignClass(cash, symbol, ClassLexems);
         status = Handler(symbol, ClassLexems, status, *inbuf, buff);
-        ProcessingStatus(&status, &ClassLexems, buff);
+        ProcessingStatus(status, ClassLexems, buff);
         //cout << symbol << " ";
     } while (symbol != EOF);
 
