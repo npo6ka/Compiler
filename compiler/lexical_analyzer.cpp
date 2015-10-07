@@ -20,116 +20,157 @@ char* FillTable(const string str[], char *cash, const int num) {
     return cash;
 }
 
-void AssignClass(const char* const cash, const char c, int *ClassLex) {
+void AssignClass(const char* const cash, const char* c, int *ClassLex) {
     if (*ClassLex == 0 || *ClassLex == -1) {
-        *ClassLex = cash[c];
+        *ClassLex = cash[*c];
     }
 }
 
-int HandleCosnt(const char c, int stat) { // class 1
+int HandleCosnt(char ch, int stat, filebuf  &file, string &str) { // class 1
     static char tab[5][8] = {
 //       st int  .*  *. flt   E +/- float
-        { 1,  1,  4,  4,  3,  7,  7,  7}, // 0 - 9
+        { 1,  1,  4,  4,  4,  7,  7,  7}, // 0 - 9
         {99,  8,  8,  8,  9,  6, 99,  9}, // +/-
-        { 2,  3,  8,  8,  7, 99, 99,  9}, // .
+        { 2,  3,  8,  8,  9, 99, 99,  9}, // .
         {99,  5, 99,  5,  5, 99, 99,  9}, // E
-        {99,  8,  8,  8,  7, 99, 99,  9}, // other
+        {99,  8,  8,  8,  9, 99, 99,  9}, // other
     };
-    int sym;
-    if (c >= '0' && c <= '9') {
-        sym = 0;
-    } else   if (c == '+' && c == '-') {
-        sym = 1;
-    } else   if (c == '.') {
-        sym = 2;
-    } else   if (c == 'E') {
-        sym = 3;
+    if (ch >= '0' && ch <= '9') {
+        stat = tab[0][stat];
+    } else   if (ch == '+' || ch == '-') {
+        stat = tab[1][stat];
+    } else   if (ch == '.') {
+        stat = tab[2][stat];
+    } else   if (ch == 'E') {
+        stat = tab[3][stat];
     } else {
-        sym = 4;
+        stat = tab[4][stat];
     }
-    return tab[sym][stat];
-}
 
-int HandlerAssignment(const char c, int stat) { //class 2
-    static char tab[6][5] = {
-//       st   +   -  *    /
-        { 8,  9, 10, 11, 12}, // =
-        { 1, 99, 99, 99, 99}, // +
-        { 2, 99, 99, 99, 99}, // -
-        { 3, 99, 99, 99, 99}, // *
-        { 4, 99, 99, 99, 99}, // /
-        {99, 99, 99, 99, 99}, // other
-    };
-    int sym;
-    switch (c) {
-    case '=':
-        sym = 0;
-        break;
-    case '+':
-        sym = 1;
-        break;
-    case '-':
-        sym = 2;
-        break;
-    case '*':
-        sym = 3;
-        break;
-    case '/':
-        sym = 4;
-        break;
-    default:
-        sym = 5;
+    if (stat > 7 && stat != 99) { 
+        file.sputbackc(ch);
+    } else {
+        str += ch;
     }
-    return tab[sym][stat];
+    return stat;
 }
-void HandlerLogical() { //class 3
+int HandlerAssignment(char ch, int stat, filebuf  &file, string &str) { //class 2
+    if (stat == 1) {
+        switch (ch) {
+        case '+':
+            str += '+';
+            return 9;
+            break;
+        case '-':
+            str += '-';
+            return 10;
+            break;
+        case '*':
+            str += '*';
+            return 11;
+            break;
+        case '/':
+            str += '/';
+            return 12;
+            break;
+        default:
+            file.sputbackc(ch);
+            return 8;
+            break;
+        }
+    } else if (ch == '=') {
+        str += '=';
+        return 1;
+    }
+}
+int HandlerLogical(char ch, int stat, filebuf  &file, string &str) { //class 3
+    if (stat == 0) {
+        if (ch =='|') {
+            str += ch;
+            return 1;
+        } else if (ch == '&') {
+            str += ch;
+            return 2;
+        } else {
+            return 99;
+        }
+    } else if (stat == 1) {
+        if (ch =='|') {
+            str += ch;
+            return 10;
+        } else {
+            file.sputbackc(ch);
+            return 8;
+        }
+    } else if (stat == 2) {
+        if (ch =='&') {
+            str += ch;
+            return 11;
+        } else {
+            file.sputbackc(ch);
+            return 9;
+        }
+    }
+}
+int HandlerId(char ch, int stat, filebuf  &file, string &str) { //class 4
+    if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '$' || ch == '_') {
+        str += ch;
+        return 1;
+    } else {
+        file.sputbackc(ch);
+        return 8;
+    }
+}
+int HandlerSpecialSymbol(char ch, int stat, filebuf  &file, string &str) { //class 5
+    if (ch == ' ' || ch == '\n' ) {
+        str += ch;
+        return 8;
+    } else {
+        str += ch;
+        return 9;
+    }
+}
+int HandlerSeparator(char ch, int stat, filebuf  &file, string &str) { //class 6
+    return 0;
+}
 
-}
-void HandlerId() { //class 4
-    
-}
-void HandlerSpecialSymbol() { //class 5
-    
-}
-void HandlerSeparator() { //class 6
-    
-}
-
-int Handler(const char c, int ClassLex, int stat) {
-    
+int Handler(char ch, int ClassLex, int stat, filebuf  &file, string &str) {
     switch (ClassLex) {
-    case -1:
-        cout << "class -1" << endl;     
+    case -1:  
         break;
     case 1:
-        cout << "class 1" << endl;
-        return HandleCosnt(c, stat);
+        return HandleCosnt(ch, stat, file, str);
         break;
     case 2:
-        cout << "class 2" << endl;
+        return HandlerAssignment(ch, stat, file, str);
         break;
     case 3:
-        cout << "class 3" << endl;
+        return HandlerLogical(ch, stat, file, str);
         break;
     case 4:
-        cout << "class 4" << endl;
+        return  HandlerId(ch, stat, file, str);
         break;
     case 5:
-        cout << "class 5" << endl;
+        return HandlerSpecialSymbol(ch, stat, file, str);
         break;
     case 6:
-        cout << "class 6" << endl;
         break;
     default:
         cout << "Error in ClassLexem" << endl;
     }
+    return stat;
 
 }
 
-void ProcessingStatus(filebuf *file, int stat, int *ClassLex) {
-    if (stat > 7) {
+void ProcessingStatus(int *stat, int *ClassLex, string &str) {
+    
+    if (*stat > 7) {
+        cout << "lexem found:" << *ClassLex << "    '" <<  str << "'" << endl;
+        str = "";
         *ClassLex = 0;
-        stat = 0;
+        *stat = 0;
+    } else {
+       
     }
 }
 
@@ -148,8 +189,8 @@ int main() {
         "=*+-/",                                                  //2 - Assignment operation
         "|&",                                                     //3 - Logical Expression
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$", //4 - identificator and Reserved Word
-        "{}();",                                                  //5 - special symbol
-        " \n"                                                     //6 - separator
+        "{}(); \n",                                               //5 - special symbol
+        ""                                                        //6 - separator
                                                                   //-1 - errors  
     };
     fs.open("input.txt");
@@ -163,10 +204,10 @@ int main() {
 
     do {
         symbol = inbuf->sbumpc(); //c = inbuf->sputbackc(c);
-        AssignClass(cash, symbol, &ClassLexems);
-        status =  Handler(symbol, ClassLexems, status);
-        ProcessingStatus(inbuf, status, &ClassLexems);
-        cout << symbol;
+        AssignClass(cash, &symbol, &ClassLexems);
+        status = Handler(symbol, ClassLexems, status, *inbuf, buff);
+        ProcessingStatus(&status, &ClassLexems, buff);
+        //cout << symbol << " ";
     } while (symbol != EOF);
 
     cout << endl;
