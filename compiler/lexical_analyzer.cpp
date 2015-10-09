@@ -1,11 +1,21 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <list>
+#include <unordered_map>
 
 using namespace std;
 
-#define NUM_CLASS_LEX 6
+unordered_map<string, int> mymap;
+
+
+#define NUM_CLASS_LEX 5
 #define SIZE_CASH_TABLE 256
+
+struct lexem {
+    char id;
+    string str;
+};
 
 char* FillTable(const string str[], char *cash, const int num) { 
     for (int i = 0; i < num; i++) {
@@ -26,7 +36,7 @@ void AssignClass(const char* const cash, const char c, int &ClassLex) {
     }
 }
 
-int HandleCosnt(char ch, int stat, filebuf  &file, string &str) { // class 1
+int HandleCosnt         (char ch, int stat, filebuf  &file, string &str) { // class 1
     static char tab[5][8] = {
 //       st int  .*  *. flt   E +/- float
         { 1,  1,  4,  4,  4,  7,  7,  7}, // 0 - 9
@@ -54,7 +64,7 @@ int HandleCosnt(char ch, int stat, filebuf  &file, string &str) { // class 1
     }
     return stat;
 }
-int HandlerAssignment(char ch, int stat, filebuf  &file, string &str) { //class 2
+int HandlerAssignment   (char ch, int stat, filebuf  &file, string &str) { //class 2
     if (stat == 1) {
         switch (ch) {
         case '+':
@@ -83,7 +93,7 @@ int HandlerAssignment(char ch, int stat, filebuf  &file, string &str) { //class 
         return 1;
     }
 }
-int HandlerLogical(char ch, int stat, filebuf  &file, string &str) { //class 3
+int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //class 3
     if (stat == 0) {
         if (ch =='|') {
             str += ch;
@@ -112,7 +122,7 @@ int HandlerLogical(char ch, int stat, filebuf  &file, string &str) { //class 3
         }
     }
 }
-int HandlerId(char ch, int stat, filebuf  &file, string &str) { //class 4
+int HandlerId           (char ch, int stat, filebuf  &file, string &str) { //class 4
     if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '$' || ch == '_') {
         str += ch;
         return 1;
@@ -130,13 +140,20 @@ int HandlerSpecialSymbol(char ch, int stat, filebuf  &file, string &str) { //cla
         return 9;
     }
 }
-int HandlerSeparator(char ch, int stat, filebuf  &file, string &str) { //class 6
-    return 0;
+int HandlerSeparator    (char ch, int stat, filebuf  &file, string &str) { //class 6
+    if (ch == ' ' || ch ==  '\n' || ch ==  '\0' || ch ==  '{' || ch ==  '}' || ch ==  '(' || ch == ')') {
+        return 8;
+    } else {
+        str += ch;
+        return 1;
+    }
 }
 
 int Handler(char ch, int ClassLex, int stat, filebuf  &file, string &str) {
     switch (ClassLex) {
     case -1:  
+        str += ch;
+        return 99;
         break;
     case 1:
         return HandleCosnt(ch, stat, file, str);
@@ -154,6 +171,7 @@ int Handler(char ch, int ClassLex, int stat, filebuf  &file, string &str) {
         return HandlerSpecialSymbol(ch, stat, file, str);
         break;
     case 6:
+        return HandlerSeparator(ch, stat, file, str);
         break;
     default:
         cout << "Error in ClassLexem" << endl;
@@ -162,15 +180,34 @@ int Handler(char ch, int ClassLex, int stat, filebuf  &file, string &str) {
 
 }
 
-void ProcessingStatus(int &stat, int &ClassLex, string &str) {
-    
-    if (stat > 7) {
-        cout << "lexem found:" << ClassLex << "    '" <<  str << "'" << endl;
+void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
+    if (stat == 99) {
+        ClassLex = 6;
+    } else if (stat > 7) {
+        if (ClassLex == 4 ) {
+            unordered_map<string, int>::iterator it = mymap.find(str);
+            if (it != mymap.end()) {
+                stat = it->second;
+                ClassLex = 7;
+            }
+        } 
+        cout << "lexem found:" << ClassLex << "    '" <<  str << "'  ch = ";
+        lexem buff;
+        buff.id = (ClassLex & 0xF);
+        buff.id = buff.id << 4;
+        buff.id = buff.id | (stat & 0x7);
+        buff.str = str;
+        lst.push_back(buff);
+        cout << (int)buff.id << endl;
         str = "";
         ClassLex = 0;
         stat = 0;
-    } else {
-        
+    } 
+}
+
+void PrintLex(list<lexem> lst) {
+    for (auto& it: lst) {
+        cout << "Lexem class: " << ((it.id & 0xF0) >> 4) << "   Lexem: " << (it.id & 0xF) << "   str: " << it.str << endl;
     }
 }
 
@@ -183,6 +220,7 @@ int main() {
     int status = 0;
     char symbol = 0;
     char cash[SIZE_CASH_TABLE];
+    list<lexem> LstLex;
     string buff = "";
     string str[NUM_CLASS_LEX] = {                                 //0 - unknown
         "0123456789.",                                            //1 - const
@@ -190,9 +228,14 @@ int main() {
         "|&",                                                     //3 - Logical Expression
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$", //4 - identificator and Reserved Word
         "{}(); \n",                                               //5 - special symbol
-        ""                                                        //6 - separator
-                                                                  //-1 - errors  
+                                                                  //6 - errors  
     };
+    mymap.insert(pair<string, int> ("if",     0));
+    mymap.insert(pair<string, int> ("else",   1));
+    mymap.insert(pair<string, int> ("for",    2));
+    mymap.insert(pair<string, int> ("in",     3));
+    mymap.insert(pair<string, int> ("return", 4));
+    mymap.insert(pair<string, int> ("with",   5));
     fs.open("input.txt");
     if (!fs.is_open()) {
         cout <<  "Error opening file" << endl;
@@ -206,10 +249,10 @@ int main() {
         symbol = inbuf->sbumpc(); //c = inbuf->sputbackc(c);
         AssignClass(cash, symbol, ClassLexems);
         status = Handler(symbol, ClassLexems, status, *inbuf, buff);
-        ProcessingStatus(status, ClassLexems, buff);
+        ProcessingStatus(status, ClassLexems, buff, LstLex);
         //cout << symbol << " ";
     } while (symbol != EOF);
-
+    PrintLex(LstLex);
     cout << endl;
     fs.close();
     return 1;
