@@ -6,19 +6,20 @@
 
 using namespace std;
 
-unordered_map<string, int> mymap;
+unordered_map<string, int> ListResWord;
 
 #define NUM_CLASS_LEX 6
 #define SIZE_CASH_TABLE 256
 
 enum {
-    CONST = 0,
-    AS_OP = 1,
-    LO_OP = 2,
-    IDEN  = 3,
-    SP_SY = 4,
-    ERR   = 5,
-    RES_W = 6,
+    UNK   = 0,
+    CONST = 1,
+    AS_OP = 2,
+    LO_OP = 3,
+    IDEN  = 4,
+    SP_SY = 5,
+    ERR   = 6,
+    RES_W = 7,
 };
 
 struct lexem {
@@ -56,12 +57,12 @@ void init(char *cash) {
     };                                                            //7 - Reserved Word
     memset(cash, 6, sizeof(char)*SIZE_CASH_TABLE);
     FillTable(str, cash, NUM_CLASS_LEX-1);
-    mymap.insert(pair<string, int> ("if",     0));
-    mymap.insert(pair<string, int> ("else",   1));
-    mymap.insert(pair<string, int> ("for",    2));
-    mymap.insert(pair<string, int> ("in",     3));
-    mymap.insert(pair<string, int> ("return", 4));
-    mymap.insert(pair<string, int> ("with",   5));
+    ListResWord.insert(pair<string, int> ("if",     0));
+    ListResWord.insert(pair<string, int> ("else",   1));
+    ListResWord.insert(pair<string, int> ("for",    2));
+    ListResWord.insert(pair<string, int> ("in",     3));
+    ListResWord.insert(pair<string, int> ("return", 4));
+    ListResWord.insert(pair<string, int> ("with",   5));
 }
 
 int HandleCosnt         (char ch, int stat, filebuf  &file, string &str) { // class 1
@@ -178,31 +179,31 @@ int HandlerError        (char ch, int stat, filebuf  &file, string &str) {
 }
 
 void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
-    if (stat == 99) { //if error class = 6
-        ClassLex = 6;
+    if (stat == 99) { //if error class = ERR
+        ClassLex = ERR;
     } else if (stat > 7) { // if stat > 7 lexem complited
-        if (ClassLex == 4 ) { // if class = 4 find reserved word
-            unordered_map<string, int>::iterator it = mymap.find(str);
-            if (it != mymap.end()) {
+        if (ClassLex == IDEN) { // if class = IDEN find reserved word
+            unordered_map<string, int>::iterator it = ListResWord.find(str);
+            if (it != ListResWord.end()) {
                 stat = it->second;
-                ClassLex = 7;
+                ClassLex = RES_W;
                 str = "";
             }
         } 
-        if (ClassLex != 5 || stat != 13) { // if symbol = ' ', '\n', '\0' then don't add in list lexem
+        if (ClassLex != SP_SY || stat != 13) { // if symbol = ' ', '\n', '\0' then don't add in list lexem
             lexem buff;
-            buff.id = ((--ClassLex & 0xF) << 4) | (stat & 0x7);
+            buff.id = ((ClassLex & 0xF) << 4) | (stat & 0x7);
             buff.str = str;
             lst.push_back(buff);       
         }
         str = "";
-        ClassLex = 0;
+        ClassLex = UNK;
         stat = 0;
     } 
 }
 
 void PrintLex(list<lexem> lst) {
-    char *str[RES_W+1] = {"constant          ", 
+    char *str[RES_W] = {  "constant          ", 
                           "assigment operator", 
                           "logical operator  ", 
                           "identificator     ", 
@@ -210,13 +211,14 @@ void PrintLex(list<lexem> lst) {
                           "Error lexem       ", 
                           "reserved word     "};
     for (auto& it: lst) {
-        cout <<  str[((it.id & 0xF0) >> 4)] << "   Lexem: " << (it.id & 0xF) << "   str: " << it.str << endl;
+        cout <<  str[((it.id & 0xF0) >> 4)-1] << "   Lexem: " 
+             << (it.id & 0xF) << "   str: " << it.str << endl;
     }
 }
 
 int main() {
     fstream fs;
-    int ClassLexems = 0;
+    int ClassLexems = UNK;
     int status = 0;
     char symbol = 0;
     char cash[SIZE_CASH_TABLE];
