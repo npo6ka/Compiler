@@ -23,18 +23,17 @@ enum {
 };
 
 enum {
-    UNK    = 7, 
     //class const
     INT    = 16,
     FLOAT  = 17,
-
+	
     //class Assignment operation
     ASIG   = 32,
     SUM    = 33,
     DIFF   = 34,
     MULT   = 35,
     DIVI   = 36,
-
+	
     //class Logical Expression
     BN_AND = 48,
     LO_AND = 49,
@@ -170,7 +169,7 @@ int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //cla
     static char tab[3][3] = {
 //          |        &     other
         { 1,      2,       ERR    }, // start
-        { LO_AND, BN_AND,  BN_AND }, // || or |
+        { LO_OR,  BN_OR,   BN_OR  }, // || or |
         { BN_AND, LO_AND,  BN_AND }, // && or &
     };
     switch (ch) {
@@ -183,7 +182,7 @@ int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //cla
     default:
         stat = tab[stat][2];
     }
-    if (stat == BN_AND || stat == LO_AND) {
+    if (stat == BN_AND || stat == BN_OR) {
         file.sputbackc(ch);
         return stat;
     } else {
@@ -228,7 +227,7 @@ int HandlerError        (char ch, int stat, filebuf  &file, string &str) {
 void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
     if (stat == ERR) { //if error class = ERR
         ClassLex = ERR_C;
-    } else if (stat > UNK) { // if stat > 7 lexem complited
+    } else if ((stat & 0xF0) != UNK_C) { // if stat > 7 lexem complited
         if (ClassLex == IDEN) { // if class = IDEN find reserved word
             unordered_map<string, int>::iterator it = ListResWord.find(str);
             if (it != ListResWord.end()) {
@@ -256,9 +255,20 @@ void PrintLex(list<lexem> lst) {
                           "special symbol    ", 
                           "Error lexem       ", 
                           "reserved word     "};
+	char *output[7][6] = {
+		{"int    ",  "float  ", ""       , ""       , ""      , ""        },
+		{"=      ",  "+      ", "-      ", "*      ", "/     ", ""        },
+		{"&      ",  "&&     ", "|      ", "||     ", ""      , ""        },
+		{"       ",  ""       , ""       , ""       , ""      , ""        },
+		{"{      ",  "}      ", "(      ", ")      ", ";     ", ""        },
+		{""       ,  "       ", ""       , ""       , ""      , ""        },
+		{"if     ",  "else   ", "for    ", "in     ", "return", "with   " },
+	};
+	
+
     for (auto& it: lst) {
         cout <<  str[((it.id & 0xF0) >> 4)-1] << "   Lexem: " 
-             << (it.id & 0xF) << "   str: " << it.str << endl;
+             << output[((it.id & 0xF0) >> 4)-1][it.id & 0xF] << "   str: " << it.str << endl;
     }
 }
 
