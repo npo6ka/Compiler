@@ -18,7 +18,7 @@ enum {
     SP_SY = 3,
     CONST = 4,
     IDEN  = 5,
-    ERR_C = 6, 
+    ERR_C = 6,
     RES_W = 7,
 };
 
@@ -38,7 +38,7 @@ enum {
     BN_OR  = 0x22,
     LO_OR  = 0x23,
 
-     //class special symbol
+    //class special symbol
     LFB    = 0x30, //left curly brace
     RFB    = 0x31, //right
     LF_PR  = 0x32, //left parenthesis
@@ -101,7 +101,7 @@ void init(char *cash) {
         "{}(); \n",                                               //3 - special symbol & separator
         "0123456789.",                                            //4 - const
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$", //5 - identificator
-                                                                  //6 - errors
+                                                                  //6 - errors 
     };                                                            //7 - Reserved Word
     
     memset(cash, SP_SY, sizeof(char)*SIZE_CASH_TABLE);
@@ -230,7 +230,7 @@ int HandlerError        (char ch, int stat, filebuf  &file, string &str) {
 void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
     if (stat == ERR) { //if error class = ERR
         ClassLex = ERR_C;
-    } else if (stat > UNK) { // if stat > 15 lexem complited
+    } else if ((stat & 0xF0) != UNK_C) { // if stat > 7 lexem complited
         if (ClassLex == IDEN) { // if class = IDEN find reserved word
             unordered_map<string, int>::iterator it = ListResWord.find(str);
             if (it != ListResWord.end()) {
@@ -268,7 +268,7 @@ void PrintLex(list<lexem> lst) {
 		{"if     ",  "else   ", "for    ", "in     ", "return", "with   " },
 	};
 
-   for (auto& it: lst) {
+    for (auto& it: lst) {
         cout <<  str[((it.id & 0xF0) >> 4)-1] << "   Lexem: " 
              << output[((it.id & 0xF0) >> 4)-1][it.id & 0xF] << "   str: " << it.str << endl;
     }
