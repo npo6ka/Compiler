@@ -13,56 +13,57 @@ unordered_map<string, int> ListResWord;
 
 enum {
     UNK_C = 0,
-    CONST = 1,
-    AS_OP = 2,
-    LO_OP = 3,
-    IDEN  = 4,
-    SP_SY = 5,
-    ERR_C = 6,
+    AS_OP = 1,
+    LO_OP = 2,
+    SP_SY = 3,
+    CONST = 4,
+    IDEN  = 5,
+    ERR_C = 6, 
     RES_W = 7,
 };
 
 enum {
-    UNK    = 7, 
-    //class const
-    INT    = 16,
-    FLOAT  = 17,
+    UNK    = 0x0F, 
 
     //class Assignment operation
-    ASIG   = 32,
-    SUM    = 33,
-    DIFF   = 34,
-    MULT   = 35,
-    DIVI   = 36,
+    ASIG   = 0x10,
+    SUM    = 0x11,
+    DIFF   = 0x12,
+    MULT   = 0x13,
+    DIVI   = 0x14,
 
     //class Logical Expression
-    BN_AND = 48,
-    LO_AND = 49,
-    BN_OR  = 50,
-    LO_OR  = 51,
+    BN_AND = 0x20,
+    LO_AND = 0x21,
+    BN_OR  = 0x22,
+    LO_OR  = 0x23,
+
+     //class special symbol
+    LFB    = 0x30, //left curly brace
+    RFB    = 0x31, //right
+    LF_PR  = 0x32, //left parenthesis
+    RG_PR  = 0x33,
+    SEMIC  = 0x34, //semicolon
+
+    //class const
+    INT    = 0x40,
+    FLOAT  = 0x41,
 
     //class indificator
-    IND    = 64,
-
-    //class special symbol
-    LFB    = 80, //left curly brace
-    RFB    = 81, //right
-    LF_PR  = 82, //left parenthesis
-    RG_PR  = 83,
-    SEMIC  = 84, //semicolon
+    IND    = 0x50,
 
     //class Error
-    ERR    = 96,
-    EX_ERR = 97, //end error
-    EXIT   = 98, //not add list
+    ERR    = 0x60,
+    EX_ERR = 0x61, //end error
+    EXIT   = 0x62, //not add list
 
     //class reserved word
-    IF     = 112,
-    ELSE   = 113,
-    FOR    = 114,
-    IN     = 115,
-    RETURN = 116,
-    WITH   = 117, 
+    IF     = 0x70,
+    ELSE   = 0x71,
+    FOR    = 0x72,
+    IN     = 0x73,
+    RETURN = 0x74,
+    WITH   = 0x75,     
 };
 
 struct lexem {
@@ -95,14 +96,15 @@ void AssignClass(const char* const cash, const char ch, int &ClassLex) {
 
 void init(char *cash) {
     string str[NUM_CLASS_LEX-1] = {
-        "0123456789.",                                            //1 - const
-        "=*+-/",                                                  //2 - Assignment operation
-        "|&",                                                     //3 - Logical Expression
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$", //4 - identificator
-        "{}(); \n",                                               //5 - special symbol & separator
-                                                                  //6 - errors 
+        "=*+-/",                                                  //1 - Assignment operation
+        "|&",                                                     //2 - Logical Expression
+        "{}(); \n",                                               //3 - special symbol & separator
+        "0123456789.",                                            //4 - const
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$", //5 - identificator
+                                                                  //6 - errors
     };                                                            //7 - Reserved Word
-    memset(cash, 6, sizeof(char)*SIZE_CASH_TABLE);
+    
+    memset(cash, SP_SY, sizeof(char)*SIZE_CASH_TABLE);
     FillTable(str, cash, NUM_CLASS_LEX-1);
     ListResWord.insert(pair<string, int> ("if",     IF    ));
     ListResWord.insert(pair<string, int> ("else",   ELSE  ));
@@ -117,8 +119,8 @@ int HandleConst         (char ch, int stat, filebuf  &file, string &str) { // cl
 //      0-9   +/-     .      E     other
         { 1,  ERR,   2,     ERR,   ERR   }, // start
         { 1,  INT,   3,     5,     INT   }, // int
-        { 4,  INT,   INT,   ERR,   INT   }, // .*
-        { 4,  INT,   INT,   5,     INT   }, // *.
+        { 4,  ERR,   ERR,   ERR,   ERR   }, // .*
+        { 4,  FLOAT, FLOAT, 5,     FLOAT }, // *.
         { 4,  FLOAT, FLOAT, 5,     17    }, // float
         { 7,  6,     ERR,   ERR,   ERR   }, // E
         { 7,  ERR,   ERR,   ERR,   ERR   }, // +/-
@@ -170,7 +172,7 @@ int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //cla
     static char tab[3][3] = {
 //          |        &     other
         { 1,      2,       ERR    }, // start
-        { LO_AND, BN_AND,  BN_AND }, // || or |
+        { LO_OR, BN_OR,  BN_OR }, // || or |
         { BN_AND, LO_AND,  BN_AND }, // && or &
     };
     switch (ch) {
@@ -183,7 +185,7 @@ int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //cla
     default:
         stat = tab[stat][2];
     }
-    if (stat == BN_AND || stat == LO_AND) {
+    if (stat == BN_AND || stat == BN_OR) {
         file.sputbackc(ch);
         return stat;
     } else {
@@ -228,7 +230,7 @@ int HandlerError        (char ch, int stat, filebuf  &file, string &str) {
 void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
     if (stat == ERR) { //if error class = ERR
         ClassLex = ERR_C;
-    } else if (stat > UNK) { // if stat > 7 lexem complited
+    } else if (stat > UNK) { // if stat > 15 lexem complited
         if (ClassLex == IDEN) { // if class = IDEN find reserved word
             unordered_map<string, int>::iterator it = ListResWord.find(str);
             if (it != ListResWord.end()) {
@@ -249,16 +251,26 @@ void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
 }
 
 void PrintLex(list<lexem> lst) {
-    char *str[RES_W] = {  "constant          ", 
-                          "assigment operator", 
+    char *str[RES_W] = {  "assigment operator", 
                           "logical operator  ", 
-                          "identificator     ", 
                           "special symbol    ", 
+                          "constant          ", 
+                          "identificator     ", 
                           "Error lexem       ", 
                           "reserved word     "};
-    for (auto& it: lst) {
+    char *output[7][6] = {
+        {"=      ",  "+      ", "-      ", "*      ", "/     ", ""        },
+        {"&      ",  "&&     ", "|      ", "||     ", ""      , ""        },
+        {"{      ",  "}      ", "(      ", ")      ", ";     ", ""        },
+		{"int    ",  "float  ", ""       , ""       , ""      , ""        },		
+		{"       ",  ""       , ""       , ""       , ""      , ""        },
+		{""       ,  "       ", ""       , ""       , ""      , ""        },
+		{"if     ",  "else   ", "for    ", "in     ", "return", "with   " },
+	};
+
+   for (auto& it: lst) {
         cout <<  str[((it.id & 0xF0) >> 4)-1] << "   Lexem: " 
-             << (it.id & 0xF) << "   str: " << it.str << endl;
+             << output[((it.id & 0xF0) >> 4)-1][it.id & 0xF] << "   str: " << it.str << endl;
     }
 }
 
@@ -272,7 +284,7 @@ int main() {
     string buff = "";
     init(cash);
     int (*lexHandler[NUM_CLASS_LEX])(char ch, int stat, filebuf  &file, string &str) = 
-        {HandleConst, HandlerAssignment, HandlerLogical, HandlerId, HandlerSpecialSymbol, HandlerError};    
+        {HandlerAssignment, HandlerLogical, HandlerSpecialSymbol, HandleConst, HandlerId, HandlerError};    
     fs.open("input.txt");
     if (!fs.is_open()) {
         cout <<  "Error opening file" << endl;
