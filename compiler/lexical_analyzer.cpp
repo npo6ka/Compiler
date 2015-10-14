@@ -46,8 +46,8 @@ enum {
     SEMIC  = 0x34, //semicolon
 
     //class const
-    INT    = 0x40,
-    FLOAT  = 0x41,
+    C_INT  = 0x40,
+    C_FLT  = 0x41,
 
     //class indificator
     IND    = 0x50,
@@ -63,7 +63,9 @@ enum {
     FOR    = 0x72,
     IN     = 0x73,
     RETURN = 0x74,
-    WITH   = 0x75,     
+    WITH   = 0x75,
+    INT    = 0x76,
+    FLOAT  = 0x77,
 };
 
 struct lexem {
@@ -112,19 +114,21 @@ void init(char *cash) {
     ListResWord.insert(pair<string, int> ("in",     IN    ));
     ListResWord.insert(pair<string, int> ("return", RETURN));
     ListResWord.insert(pair<string, int> ("with",   WITH  ));
+    ListResWord.insert(pair<string, int> ("int",   INT  ));
+    ListResWord.insert(pair<string, int> ("float",   FLOAT  ));
 }
 
 int HandleConst         (char ch, int stat, filebuf  &file, string &str) { // class 1
     static char tab[8][5] = {
 //      0-9   +/-     .      E     other
         { 1,  ERR,   2,     ERR,   ERR   }, // start
-        { 1,  INT,   3,     5,     INT   }, // int
+        { 1,  C_INT,   3,     5,   C_INT }, // int
         { 4,  ERR,   ERR,   ERR,   ERR   }, // .*
-        { 4,  FLOAT, FLOAT, 5,     FLOAT }, // *.
-        { 4,  FLOAT, FLOAT, 5,     17    }, // float
+        { 4,  C_FLT, C_FLT, 5,     C_FLT }, // *.
+        { 4,  C_FLT, C_FLT, 5,     17    }, // float
         { 7,  6,     ERR,   ERR,   ERR   }, // E
         { 7,  ERR,   ERR,   ERR,   ERR   }, // +/-
-        { 7,  FLOAT, FLOAT, FLOAT, FLOAT }  // float
+        { 7,  C_FLT, C_FLT, C_FLT, C_FLT }  // float
     }; 
     if (ch >= '0' && ch <= '9') {
         stat = tab[stat][0];
@@ -258,14 +262,14 @@ void PrintLex(list<lexem> lst) {
                           "identificator     ", 
                           "Error lexem       ", 
                           "reserved word     "};
-    char *output[7][6] = {
-        {"=      ",  "+      ", "-      ", "*      ", "/     ", ""        },
-        {"&      ",  "&&     ", "|      ", "||     ", ""      , ""        },
-        {"{      ",  "}      ", "(      ", ")      ", ";     ", ""        },
-		{"int    ",  "float  ", ""       , ""       , ""      , ""        },		
-		{"       ",  ""       , ""       , ""       , ""      , ""        },
-		{""       ,  "       ", ""       , ""       , ""      , ""        },
-		{"if     ",  "else   ", "for    ", "in     ", "return", "with   " },
+    char *output[7][8] = {
+        {"=      ",  "+      ", "-      ", "*      ", "/      ", ""       , ""       , ""        },
+        {"&      ",  "&&     ", "|      ", "||     ", ""       , ""       , ""       , ""        },
+        {"{      ",  "}      ", "(      ", ")      ", ";      ", ""       , ""       , ""        },
+        {"int    ",  "float  ", ""       , ""       , ""       , ""       , ""       , ""        },		
+        {"       ",  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
+        {""       ,  "       ", ""       , ""       , ""       , ""       , ""       , ""        },
+        {"if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " }
 	};
 
     for (auto& it: lst) {
@@ -312,7 +316,4 @@ int main() {
 4 ResWr ::= if else for in return with    ('i','e','f','i','r','w')       
 5 SpeCh ::= { } ( ) ;                     ('{','}','(',')',';')           ("{}(),;")
 6 Divid ::= \0 \n _                       (' ','\n','\0')                 (" ,\n\0")
-
-01010000
-hsdfsdfdfsdf d h g ddfg i sdfsd
 */
