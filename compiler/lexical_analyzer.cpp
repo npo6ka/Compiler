@@ -24,14 +24,14 @@ enum {
 
 enum {
     UNK    = 0xF + (UNK_C << 4), 
-
+	
     //class Assignment operation
     ASIG   = 0x0 + (AS_OP << 4),
     SUM    = 0x1 + (AS_OP << 4),
     DIFF   = 0x2 + (AS_OP << 4),
     MULT   = 0x3 + (AS_OP << 4),
     DIVI   = 0x4 + (AS_OP << 4),
-
+	
     //class Logical Expression
     BN_AND = 0x0 + (LO_OP << 4),
     LO_AND = 0x1 + (LO_OP << 4),
@@ -178,7 +178,7 @@ int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //cla
     static char tab[3][3] = {
 //          |        &     other
         { 1,      2,       ERR    }, // start
-        { LO_OR,  BN_OR,   BN_OR  }, // || or |
+        { LO_OR, BN_OR,  BN_OR }, // || or |
         { BN_AND, LO_AND,  BN_AND }, // && or &
     };
     switch (ch) {
@@ -273,7 +273,7 @@ void PrintLex(list<lexem> lst) {
         {""       ,  "       ", ""       , ""       , ""       , ""       , ""       , ""        },
         {"if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " }
 	};
-
+	
     for (auto& it: lst) {
         cout <<  str[((it.id & 0xF0) >> 4)-1] << "   Lexem: " 
              << output[((it.id & 0xF0) >> 4)-1][it.id & 0xF] << "   str: " << it.str << endl;
