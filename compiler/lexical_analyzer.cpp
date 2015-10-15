@@ -31,7 +31,7 @@ enum {
     DIFF   = 0x2 + (AS_OP << 4),
     MULT   = 0x3 + (AS_OP << 4),
     DIVI   = 0x4 + (AS_OP << 4),
-	
+
     //class Logical Expression
     BN_AND = 0x0 + (LO_OP << 4),
     LO_AND = 0x1 + (LO_OP << 4),
@@ -86,13 +86,11 @@ char* FillTable(const string str[], char *cash, const int num) {
     return cash;
 }
 
-void AssignClass(const char* const cash, const char ch, int &ClassLex) {
-    if (!ClassLex) {
-        if (ch != EOF){
-            ClassLex = cash[ch];
-        } else {
-            ClassLex = SP_SY;
-        }
+int AssignClass(const char* const cash, const char ch) {
+    if (ch != EOF){
+        return cash[ch];
+    } else {
+        return SP_SY;
     }
 }
 
@@ -118,41 +116,62 @@ void init(char *cash) {
     ListResWord.insert(pair<string, int> ("float",   FLOAT  ));
 }
 
-int HandleConst         (char ch, int stat, filebuf  &file, string &str) { // class 1
+lexem HandlerError        (filebuf* inbuf, char *cash, string str) {
+    char ch = inbuf->sbumpc();
+    do {
+        str += ch;
+        ch = inbuf->sbumpc();   
+    } while (AssignClass(cash, ch) > SP_SY);
+    inbuf->sputbackc(ch);
+    lexem buff = {ERR_C, str};
+    return buff;
+}
+lexem HandlerConst        (filebuf* inbuf, char *cash) { // class 1
     static char tab[8][5] = {
 //      0-9   +/-     .      E     other
         { 1,  ERR,   2,     ERR,   ERR   }, // start
-        { 1,  C_INT,   3,     5,   C_INT }, // int
+        { 1,  C_INT, 3,     5,     C_INT }, // int
         { 4,  ERR,   ERR,   ERR,   ERR   }, // .*
         { 4,  C_FLT, C_FLT, 5,     C_FLT }, // *.
-        { 4,  C_FLT, C_FLT, 5,     17    }, // float
+        { 4,  C_FLT, C_FLT, 5,     C_FLT }, // float
         { 7,  6,     ERR,   ERR,   ERR   }, // E
         { 7,  ERR,   ERR,   ERR,   ERR   }, // +/-
         { 7,  C_FLT, C_FLT, C_FLT, C_FLT }  // float
     }; 
+    int stat = 0;
+    string str = "";
+    char ch;
 
+    do {
+        ch = inbuf->sbumpc();       
+        if (ch >= '0' && ch <= '9') {
+            stat = tab[stat][0];
+        } else   if (ch == '+' || ch == '-') {
+            stat = tab[stat][1];
+        } else   if (ch == '.') {
+            stat = tab[stat][2];
+        } else   if (ch == 'E') {
+            stat = tab[stat][3];
+        } else {
+            stat = tab[stat][4];
+        }
 
-    if (ch >= '0' && ch <= '9') {
-        stat = tab[stat][0];
-    } else   if (ch == '+' || ch == '-') {
-        stat = tab[stat][1];
-    } else   if (ch == '.') {
-        stat = tab[stat][2];
-    } else   if (ch == 'E') {
-        stat = tab[stat][3];
+        if ((stat & 0xF0) == UNK_C) {
+            str += ch;
+        } else {
+            inbuf->sputbackc(ch);
+        }
+    } while ((stat & 0xF0) == UNK_C);
+
+    if (stat == ERR) {
+        return HandlerError (inbuf, cash, str);
     } else {
-        stat = tab[stat][4];
-    }
-
-    if (stat > 7 && stat != ERR) { 
-        file.sputbackc(ch);
-    } else {
-        str += ch;
-    }
-    return stat;
+        lexem buff = {stat, str};
+        return buff;
+    } 
 }
-int HandlerAssignment   (char ch, int stat, filebuf  &file, string &str) { //class 2
-    if (ch == '=') {
+lexem HandlerAssignment   (filebuf* inbuf, char *cash) { //class 2
+    /*if (ch == '=') {
         return ASIG;
     } else {
         char buff = file.sbumpc();
@@ -172,13 +191,15 @@ int HandlerAssignment   (char ch, int stat, filebuf  &file, string &str) { //cla
             str += ch;
             return ERR;
         }
-    }
+    }*/
+    lexem buff = {1, ""};
+    return buff;
 }
-int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //class 3
-    static char tab[3][3] = {
+lexem HandlerLogical      (filebuf* inbuf, char *cash) { //class 3
+    /*static char tab[3][3] = {
 //          |        &     other
         { 1,      2,       ERR    }, // start
-        { LO_OR, BN_OR,  BN_OR }, // || or |
+        { LO_OR,  BN_OR,   BN_OR  }, // || or |
         { BN_AND, LO_AND,  BN_AND }, // && or &
     };
     switch (ch) {
@@ -196,19 +217,23 @@ int HandlerLogical      (char ch, int stat, filebuf  &file, string &str) { //cla
         return stat;
     } else {
         return stat;
-    }
+    }*/
+    lexem buff = {1, ""};
+    return buff;
 }
-int HandlerId           (char ch, int stat, filebuf  &file, string &str) { //class 4
-    if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '$' || ch == '_') {
+lexem HandlerId           (filebuf* inbuf, char *cash) { //class 4
+   /* if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '$' || ch == '_') {
         str += ch;
         return 1;
     } else {
         file.sputbackc(ch);
         return IND;
-    }
+    }*/
+    lexem buff = {1, ""};
+    return buff;
 }
-int HandlerSpecialSymbol(char ch, int stat, filebuf  &file, string &str) { //class 5
-    switch (ch) {
+lexem HandlerSpecialSymbol(filebuf* inbuf, char *cash) { //class 5
+    /*switch (ch) {
     case '{':
         return LFB;
     case '}':
@@ -221,20 +246,13 @@ int HandlerSpecialSymbol(char ch, int stat, filebuf  &file, string &str) { //cla
         return SEMIC;
     default:
         return EXIT;
-    }
-}
-int HandlerError        (char ch, int stat, filebuf  &file, string &str) {
-    if (ch == ' ' || ch ==  '\n' || ch ==  -1 || ch ==  '{' || ch ==  '}' || ch ==  '(' || ch == ')' || ch == ';') {
-        file.sputbackc(ch);
-        return EX_ERR;
-    } else {
-        str += ch;
-        return ERR;
-    }
+    }*/
+    lexem buff = {1, ""};
+    return buff;
 }
 
-void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
-    if (stat == ERR) { //if error class = ERR
+void ProcessingStatus(lexem compLex, list<lexem> &lst) {
+/*    if (stat == ERR) { //if error class = ERR
         ClassLex = ERR_C;
     } else if ((stat & 0xF0) != UNK_C) { // if stat > 7 lexem complited
         if (ClassLex == IDEN) { // if class = IDEN find reserved word
@@ -253,7 +271,7 @@ void ProcessingStatus(int &stat, int &ClassLex, string &str, list<lexem> &lst) {
         str = "";
         ClassLex = UNK_C;
         stat = 0;
-    } 
+    } */
 }
 
 void PrintLex(list<lexem> lst) {
@@ -273,7 +291,7 @@ void PrintLex(list<lexem> lst) {
         {""       ,  "       ", ""       , ""       , ""       , ""       , ""       , ""        },
         {"if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " }
 	};
-	
+
     for (auto& it: lst) {
         cout <<  str[((it.id & 0xF0) >> 4)-1] << "   Lexem: " 
              << output[((it.id & 0xF0) >> 4)-1][it.id & 0xF] << "   str: " << it.str << endl;
@@ -282,27 +300,27 @@ void PrintLex(list<lexem> lst) {
 
 int main() {
     fstream fs;
-    int ClassLexems = UNK_C;
-    int status = 0;
     char symbol = 0;
     char cash[SIZE_CASH_TABLE];
     list<lexem> LstLex;
-    string buff = "";
-    init(cash);
-    int (*lexHandler[NUM_CLASS_LEX])(char ch, int stat, filebuf  &file, string &str) = 
-        {HandlerAssignment, HandlerLogical, HandlerSpecialSymbol, HandleConst, HandlerId, HandlerError};    
+    init(cash);    
     fs.open("input.txt");
     if (!fs.is_open()) {
         cout <<  "Error opening file" << endl;
         return -1;
     }
+    string str = "";
+    char ch = 0;
+    str += ch;
+    str += 't';
     filebuf* inbuf  = fs.rdbuf();
-    do {
-        symbol = inbuf->sbumpc();
-        AssignClass(cash, symbol, ClassLexems);
-        status = lexHandler[ClassLexems-1](symbol, status, *inbuf, buff);
-        ProcessingStatus(status, ClassLexems, buff, LstLex);
-    } while (symbol != EOF);
+    lexem (*lexHandler[NUM_CLASS_LEX-1])(filebuf* inbuf, char *cash) = 
+        {HandlerAssignment, HandlerLogical, HandlerSpecialSymbol, HandlerConst, HandlerId};
+
+    while (symbol != EOF) {
+        symbol = inbuf->sgetc();
+        LstLex.push_back(lexHandler[AssignClass(cash, symbol) - 1](inbuf, cash));
+    } 
     PrintLex(LstLex);
     cout << endl;
     fs.close();
