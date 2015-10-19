@@ -18,13 +18,13 @@ enum {
     SP_SY = 3,
     CONST = 4,
     IDEN  = 5,
-    ERR_C = 6,
-    RES_W = 7,
+    RES_W = 6,
+    ERR_C = 7,
 };
 
 enum {
     UNK    = 0xF + (UNK_C << 4), 
-	
+
     //class Assignment operation
     ASIG   = 0x0 + (AS_OP << 4),
     SUM    = 0x1 + (AS_OP << 4),
@@ -44,6 +44,7 @@ enum {
     LF_PR  = 0x2 + (SP_SY << 4), //left parenthesis
     RG_PR  = 0x3 + (SP_SY << 4),
     SEMIC  = 0x4 + (SP_SY << 4), //semicolon
+    SEPR   = 0x4 + (SP_SY << 4),
 
     //class const
     C_INT  = 0x0 + (CONST << 4),
@@ -51,11 +52,6 @@ enum {
 
     //class indificator
     IND    = 0x0 + (IDEN << 4),
-
-    //class Error
-    ERR    = 0x0 + (ERR_C << 4),
-    EX_ERR = 0x1 + (ERR_C << 4), //end error
-    EXIT   = 0x2 + (ERR_C << 4), //not add list
 
     //class reserved word
     IF     = 0x0 + (RES_W << 4),
@@ -66,24 +62,23 @@ enum {
     WITH   = 0x5 + (RES_W << 4),
     INT    = 0x6 + (RES_W << 4),
     FLOAT  = 0x7 + (RES_W << 4),
+
+    //class Error
+    ERR    = 0x0 + (ERR_C << 4),
 };
 
 class lexem {
 public:
     char _id;
     string _str;
-    lexem(int i, string str): _id(ERR), _str("") {
-        _id = i;
-        _str = str;
-    }
+    lexem(int i, string str): _id(i), _str(str) {}
     ~lexem() {}
 };
 
-//????? default val in cash table
 char* FillTable(const string str[], char *cash, const int num) { 
     for (int i = 0; i < num; i++) {
         for (int j = 0; j < str[i]._Mysize; j++) {
-            if (str[i][j] >= 0 && str[i][j] < 256) {
+            if (str[i][j] >= 0 && str[i][j] < 256 && str[i][j]) {
                 cash[str[i][j]] = i+1;
             } else {
                 cout << "error fill cash table: symbol: " << str[i][j] << endl;
@@ -95,9 +90,9 @@ char* FillTable(const string str[], char *cash, const int num) {
 
 int AssignClass(const char* const cash, const char ch) {
     if (ch != EOF){
-        return cash[ch]-1;
+        return cash[ch];
     } else {
-        return SP_SY;
+        return UNK_C;
     }
 }
 
@@ -108,10 +103,9 @@ void init(char *cash) {
         "{}(); \n",                                               //3 - special symbol & separator
         "0123456789.",                                            //4 - const
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$", //5 - identificator
-                                                                  //6 - errors 
     };                                                            //7 - Reserved Word
-    
-    memset(cash, SP_SY, sizeof(char)*SIZE_CASH_TABLE);
+
+    memset(cash, UNK_C, sizeof(char)*SIZE_CASH_TABLE);
     FillTable(str, cash, NUM_CLASS_LEX-1);
     ListResWord.insert(pair<string, int> ("if",     IF    ));
     ListResWord.insert(pair<string, int> ("else",   ELSE  ));
@@ -119,19 +113,10 @@ void init(char *cash) {
     ListResWord.insert(pair<string, int> ("in",     IN    ));
     ListResWord.insert(pair<string, int> ("return", RETURN));
     ListResWord.insert(pair<string, int> ("with",   WITH  ));
-    ListResWord.insert(pair<string, int> ("int",   INT  ));
-    ListResWord.insert(pair<string, int> ("float",   FLOAT  ));
+    ListResWord.insert(pair<string, int> ("int",    INT   ));
+    ListResWord.insert(pair<string, int> ("float",  FLOAT ));
 }
 
-lexem HandlerError        (filebuf* inbuf, char *cash, string str) {
-    char ch = inbuf->sbumpc();
-    do {
-        str += ch;
-        ch = inbuf->sbumpc();   
-    } while (AssignClass(cash, ch) >= SP_SY && ch != EOF);
-    inbuf->sputbackc(ch);
-    return lexem(ERR, str);
-}
 lexem HandlerConst        (filebuf* inbuf, char *cash) {
     static char tab[8][5] = {
 //      0-9   +/-     .      E     other
@@ -148,8 +133,7 @@ lexem HandlerConst        (filebuf* inbuf, char *cash) {
     string str = "";
     char ch;
 
-    do {
-        ch = inbuf->sbumpc();       
+    while ((ch = inbuf->sbumpc()) != EOF) {
         if (ch >= '0' && ch <= '9') {
             stat = tab[stat][0];
         } else   if (ch == '+' || ch == '-') {
@@ -166,17 +150,19 @@ lexem HandlerConst        (filebuf* inbuf, char *cash) {
             str += ch;
         } else {
             inbuf->sputbackc(ch);
+            break;
         }
-    } while ((stat & 0xF0) == UNK_C);
+    } 
 
-    if (stat == ERR) {
-        return HandlerError (inbuf, cash, str);
+    if (stat == ERR || stat < UNK) {
+        return lexem(ERR, str);
     } else {
         return lexem(stat, str);
     } 
 }
 lexem HandlerAssignment   (filebuf* inbuf, char *cash) {
     char ch = inbuf->sbumpc();
+
     if (ch == '=') {
         return lexem(ASIG, "");
     } else {
@@ -190,16 +176,16 @@ lexem HandlerAssignment   (filebuf* inbuf, char *cash) {
             case '*':
                 return lexem(MULT, "");
             case '/':
-                return lexem( DIVI, ""); 
+                return lexem(DIVI, "");
+            default:
+                inbuf->sputbackc(buff);
+                return lexem(ERR, string() + ch);
             }
         } else {
-            inbuf->sputbackc(buff);
-            string str;
-            str += ch;
-            return HandlerError (inbuf, cash, str);
+            inbuf->sputbackc(buff); 
+            return lexem(ERR, string() + ch);
         }
     }
-    return lexem(1,"");
 }
 lexem HandlerLogical      (filebuf* inbuf, char *cash) { 
     char ch = inbuf->sbumpc();
@@ -221,27 +207,31 @@ lexem HandlerLogical      (filebuf* inbuf, char *cash) {
             return lexem(BN_AND, "");
         }
     } else {
-        inbuf->sputbackc(ch);
-        return HandlerError(inbuf, cash, "");
+        return lexem(ERR, string() + ch);
     }
 }
 lexem HandlerId           (filebuf* inbuf, char *cash) {
     char ch = 0;
     string str;
-    while (ch != EOF) {
-        ch = inbuf->sbumpc();
+
+    while ((ch = inbuf->sbumpc()) != EOF) {
         if (cash[ch] == IDEN || (cash[ch] == CONST && ch != '.')) {
             str += ch;
         } else {
             inbuf->sputbackc(ch);
-            return lexem(IND, str);
+            unordered_map<string, int>::iterator it = ListResWord.find(str);
+            if (it != ListResWord.end()) {
+                return lexem(it->second, "");
+            } else {
+                return lexem(IND, str);
+            }
         }
     }
     return lexem(0,"");
 }
-//????????????????????????? ERROR where ch = ' ' 
 lexem HandlerSpecialSymbol(filebuf* inbuf, char *cash) { 
     char ch = inbuf->sbumpc();
+
     switch (ch) {
     case '{':
         return lexem(LFB, "");
@@ -254,49 +244,40 @@ lexem HandlerSpecialSymbol(filebuf* inbuf, char *cash) {
     case ';':
         return lexem(SEMIC, "");
     default:
-        return HandlerError(inbuf, cash, "");
+        return lexem(SEPR, "");
     }
 }
+lexem HandlerUnknown      (filebuf* inbuf, char *cash){
+    string str;
+    char ch = inbuf->sbumpc();
 
-void ProcessingStatus(lexem compLex, list<lexem> &lst) {
-/*    if (stat == ERR) { //if error class = ERR
-        ClassLex = ERR_C;
-    } else if ((stat & 0xF0) != UNK_C) { // if stat > 7 lexem complited
-        if (ClassLex == IDEN) { // if class = IDEN find reserved word
-            unordered_map<string, int>::iterator it = ListResWord.find(str);
-            if (it != ListResWord.end()) {
-                stat = it->second;
-                str = "";
-            }
-        } 
-        if (stat != EXIT) { // if symbol = ' ', '\n', '\0' then don't add in list lexem
-            lexem buff;
-            buff.id = stat; //((ClassLex & 0xF) << 4) | (stat & 0x7);
-            buff.str = str;
-            lst.push_back(buff);       
+    while ((ch = inbuf->sbumpc()) != EOF) {
+        if (AssignClass(cash, ch) < SP_SY) {
+            inbuf->sputbackc(ch);
+            return lexem(ERR, str);
+        } else {
+            str += ch;  
         }
-        str = "";
-        ClassLex = UNK_C;
-        stat = 0;
-    } */
+    } 
+    return lexem(ERR, str);
 }
 
 void PrintLex(list<lexem> lst) {
-    char *str[RES_W] = {  "assigment operator", 
+    char *str[ERR_C] = {  "assigment operator", 
                           "logical operator  ", 
                           "special symbol    ", 
                           "constant          ", 
                           "identificator     ", 
-                          "Error lexem       ", 
-                          "reserved word     "};
+                          "reserved word     ", 
+                          "Error lexem       "};
     char *output[7][8] = {
         {"=      ",  "+      ", "-      ", "*      ", "/      ", ""       , ""       , ""        },
         {"&      ",  "&&     ", "|      ", "||     ", ""       , ""       , ""       , ""        },
         {"{      ",  "}      ", "(      ", ")      ", ";      ", ""       , ""       , ""        },
-        {"int    ",  "float  ", ""       , ""       , ""       , ""       , ""       , ""        },		
+        {"int    ",  "float  ", ""       , ""       , ""       , ""       , ""       , ""        },
         {"       ",  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
-        {"       ",  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
-        {"if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " }
+        {"if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " },
+        {"       ",  ""       , ""       , ""       , ""       , ""       , ""       , ""        } 
 	};
 
     for (auto& it: lst) {
@@ -307,8 +288,8 @@ void PrintLex(list<lexem> lst) {
 
 int main() {
     fstream fs;
-    char symbol = 0;
     char cash[SIZE_CASH_TABLE];
+    char symbol;
     list<lexem> LstLex;
     init(cash);    
     fs.open("input.txt");
@@ -316,18 +297,14 @@ int main() {
         cout <<  "Error opening file" << endl;
         return -1;
     }
-    string str = "";
-    char ch = 0;
-    str += ch;
-    str += 't';
     filebuf* inbuf  = fs.rdbuf();
-    lexem (*lexHandler[NUM_CLASS_LEX-1])(filebuf* inbuf, char *cash) = 
-        {HandlerAssignment, HandlerLogical, HandlerSpecialSymbol, HandlerConst, HandlerId};
+    lexem (*lexHandler[NUM_CLASS_LEX])(filebuf* inbuf, char *cash) = 
+        {HandlerUnknown, HandlerAssignment, HandlerLogical, HandlerSpecialSymbol, HandlerConst, HandlerId};
 
-    do {
-        symbol = inbuf->sgetc();
-        LstLex.push_back(lexHandler[AssignClass(cash, symbol)](inbuf, cash));
-    } while (symbol != EOF);
+    while ((symbol = inbuf->sgetc()) != EOF) {
+        LstLex.push_back(
+            lexHandler[AssignClass(cash, inbuf->sgetc())] (inbuf, cash));
+    }
     PrintLex(LstLex);
     cout << endl;
     fs.close();
