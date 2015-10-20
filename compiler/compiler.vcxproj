@@ -80,6 +80,9 @@
   <ItemGroup>
     <ClCompile Include="lexical_analyzer.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lexical_analyzer.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
