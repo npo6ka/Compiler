@@ -44,7 +44,8 @@ enum {
     LF_PR  = 0x2 + (SP_SY << 4), //left parenthesis
     RG_PR  = 0x3 + (SP_SY << 4),
     SEMIC  = 0x4 + (SP_SY << 4), //semicolon
-    SEPR   = 0x4 + (SP_SY << 4),
+    SEPR   = 0x5 + (SP_SY << 4),
+    SEP_n  = 0x6 + (SP_SY << 4),
 
     //class const
     C_INT  = 0x0 + (CONST << 4),
@@ -243,6 +244,8 @@ lexem HandlerSpecialSymbol(filebuf* inbuf, char *cash) {
         return lexem(RG_PR, "");
     case ';':
         return lexem(SEMIC, "");
+    case '\n':
+        return lexem(SEP_n, "");
     default:
         return lexem(SEPR, "");
     }
@@ -262,7 +265,7 @@ lexem HandlerUnknown      (filebuf* inbuf, char *cash){
     return lexem(ERR, str);
 }
 
-void PrintLex(list<lexem> lst) {
+bool PrintLex(list<lexem> lst) {
     char *str[ERR_C] = {  "assigment operator", 
                           "logical operator  ", 
                           "special symbol    ", 
@@ -273,16 +276,40 @@ void PrintLex(list<lexem> lst) {
     char *output[7][8] = {
         {"=      ",  "+      ", "-      ", "*      ", "/      ", ""       , ""       , ""        },
         {"&      ",  "&&     ", "|      ", "||     ", ""       , ""       , ""       , ""        },
-        {"{      ",  "}      ", "(      ", ")      ", ";      ", ""       , ""       , ""        },
-        {"int    ",  "float  ", ""       , ""       , ""       , ""       , ""       , ""        },
-        {"       ",  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
+        {"{      ",  "}      ", "(      ", ")      ", ";      ", "sapce  ", "enter  ", ""        },
+        {""       ,  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
+        {""       ,  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
         {"if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " },
-        {"       ",  ""       , ""       , ""       , ""       , ""       , ""       , ""        } 
+        {""       ,  ""       , ""       , ""       , ""       , ""       , ""       , ""        } 
 	};
+    list<lexem> BufErr;
+    int buff;
+    int line = 1;
+    std::list<lexem>::iterator it;
 
-    for (auto& it: lst) {
-        cout <<  str[((it._id & 0xF0) >> 4)-1] << "   Lexem: " 
-             << output[((it._id & 0xF0) >> 4)-1][it._id & 0xF] << "   str: " << it._str << endl;
+    cout << "List lexem:" << endl;
+    for (it = lst.begin(); it != lst.end(); ++it) {
+        buff = ((it->_id & 0xF0) >> 4);
+        if (buff == ERR_C) {
+            BufErr.push_back(lexem(line, it->_str));
+            it = --lst.erase(it);
+        } else if (buff-- == SP_SY && (it->_id & 0xF) > 4) {
+            if ((it->_id & 0xF) != 5) {
+                line++;
+            }
+            it = --lst.erase(it);
+        } else {
+            cout <<  str[buff] << "   Lexem: " << output[buff][it->_id & 0xF] + it->_str << endl;
+        }
+    }
+    if (BufErr.size()) {
+        cout << "\n\n" << "Error lexem found:" << endl;
+        for (auto& it: BufErr) {
+            cout << "line: " << (int)it._id << ":  \"" << it._str << "\"" << endl;
+        }
+        return 0;
+    } else {
+        return 1;
     }
 }
 
@@ -305,10 +332,9 @@ int main() {
         LstLex.push_back(
             lexHandler[AssignClass(cash, inbuf->sgetc())] (inbuf, cash));
     }
-    PrintLex(LstLex);
-    cout << endl;
+   
     fs.close();
-    return 1;
+    return PrintLex(LstLex);
 }
 
 /*
