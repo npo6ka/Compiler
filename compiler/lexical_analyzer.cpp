@@ -195,51 +195,32 @@ lexem HandlerUnknown      (filebuf* inbuf, char *cash){
     return lexem(ERR, str);
 }
 
-bool PrintLex(list<lexem> lst) {
-    char *str[ERR_C] = {  "assigment operator", 
+void PrintLex(list<lexem> lst) {
+    char *str[RES_W] = {  "assigment operator", 
                           "logical operator  ", 
                           "special symbol    ", 
                           "constant          ", 
                           "identificator     ", 
-                          "reserved word     ", 
-                          "Error lexem       "};
-    char *output[7][8] = {
+                          "reserved word     "};
+    char *output[RES_W][8] = {
         {"=      ",  "+      ", "-      ", "*      ", "/      ", ""       , ""       , ""        },
         {"&      ",  "&&     ", "|      ", "||     ", ""       , ""       , ""       , ""        },
-        {"{      ",  "}      ", "(      ", ")      ", ";      ", "sapce  ", "enter  ", ""        },
+        {"{      ",  "}      ", "(      ", ")      ", ";      ", ""       , ""       , ""        },
         {""       ,  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
         {""       ,  ""       , ""       , ""       , ""       , ""       , ""       , ""        },
         {"if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " },
-        {""       ,  ""       , ""       , ""       , ""       , ""       , ""       , ""        } 
 	};
-    list<lexem> BufErr;
-    int buff;
-    int line = 1;
-    std::list<lexem>::iterator it;
 
     cout << "List lexem:" << endl;
-    for (it = lst.begin(); it != lst.end(); ++it) {
-        buff = ((it->_id & 0xF0) >> 4);
-        if (buff == ERR_C) {
-            BufErr.push_back(lexem(line, it->_str));
-            it = --lst.erase(it);
-        } else if (buff-- == SP_SY && (it->_id & 0xF) > 4) {
-            if ((it->_id & 0xF) != 5) {
-                line++;
-            }
-            it = --lst.erase(it);
-        } else {
-            cout <<  str[buff] << "   Lexem: " << output[buff][it->_id & 0xF] + it->_str << endl;
-        }
+    for (auto& it: lst) {
+        cout <<  str[((it._id & 0xF0) >> 4) - 1] << "   Lexem: " << output[((it._id & 0xF0) >> 4)-1][it._id & 0xF] + it._str << endl;
     }
-    if (BufErr.size()) {
-        cout << "\n\n" << "Error lexem found:" << endl;
-        for (auto& it: BufErr) {
-            cout << "line: " << (int)it._id << ":  \"" << it._str << "\"" << endl;
-        }
-        return 0;
-    } else {
-        return 1;
+}
+
+void PrintErr(list<lexem> lst) {
+    cout << "\n\n" << "Error lexem found:" << endl;
+    for (auto& it: lst) {
+        cout << "line: " << (int)it._id << ":  \"" << it._str << "\"" << endl;
     }
 }
 
@@ -248,6 +229,9 @@ int main() {
     char cash[SIZE_CASH_TABLE];
     char symbol;
     list<lexem> LstLex;
+    list<lexem> BufErr;
+    int line = 1;
+    int ClassLex;
     init(cash);    
     fs.open("input.txt");
     if (!fs.is_open()) {
@@ -259,12 +243,26 @@ int main() {
         {HandlerUnknown, HandlerAssignment, HandlerLogical, HandlerSpecialSymbol, HandlerConst, HandlerId};
 
     while ((symbol = inbuf->sgetc()) != EOF) {
-        LstLex.push_back(
-            lexHandler[AssignClass(cash, inbuf->sgetc())] (inbuf, cash));
+        lexem Lex = lexHandler[AssignClass(cash, inbuf->sgetc())] (inbuf, cash);
+        ClassLex = (Lex._id & 0xF0) >> 4;
+        if (ClassLex == ERR_C) {
+            BufErr.push_back(lexem(line, Lex._str));
+        } else if (ClassLex == SP_SY && (Lex._id & 0xF) >= SEPR) {
+            if ((Lex._id & 0xF) == SEP_n) {
+                line++;
+            } //else don't add lexem in the list
+        } else {
+            LstLex.push_back(Lex);
+        }  
     }
-   
+
     fs.close();
-    return PrintLex(LstLex);
+    PrintLex(LstLex);
+    if (BufErr.size()) {
+        PrintErr(BufErr);
+        return 0;
+    }
+    return 1;
 }
 
 /*
