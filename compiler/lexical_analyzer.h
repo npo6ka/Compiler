@@ -6,15 +6,7 @@ using namespace std;
 #define NUM_CLASS_LEX 6
 #define SIZE_CASH_TABLE 256
 
-class lexem {
-public:
-    char _id;
-    string _str;
-    lexem(int i, string str): _id(i), _str(str) {}
-    ~lexem() {}
-};
-
-enum {
+enum Class{
     UNK_C = 0,
     AS_OP = 1,
     LO_OP = 2,
@@ -22,10 +14,10 @@ enum {
     CONST = 4,
     IDEN  = 5,
     RES_W = 6,
-    ERR_C = 7,
+    ERR_C = 7,разность
 };
 
-enum {
+enum NumLex{
     UNK    = 0xF + (UNK_C << 4), 
 
     //class Assignment operation
@@ -70,4 +62,13 @@ enum {
     //class Error
     ERR    = 0x0 + (ERR_C << 4),
 };
+
+class lexem {
+public:
+    NumLex _id;
+    string _str;
+    lexem(NumLex i, string str): _id(i), _str(str) {}
+    ~lexem() {}
+};
+
 #endif // !LEXIC

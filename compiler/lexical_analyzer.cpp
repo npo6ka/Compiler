@@ -88,7 +88,7 @@ lexem HandlerConst        (filebuf* inbuf, char *cash) {
     if (stat == ERR || stat < UNK) {
         return lexem(ERR, str);
     } else {
-        return lexem(stat, str);
+        return lexem((NumLex)stat, str);
     } 
 }
 lexem HandlerAssignment   (filebuf* inbuf, char *cash) {
@@ -145,20 +145,20 @@ lexem HandlerId           (filebuf* inbuf, char *cash) {
     char ch = 0;
     string str;
 
-    while ((ch = inbuf->sbumpc()) != EOF) {
-        if (cash[ch] == IDEN || (cash[ch] == CONST && ch != '.')) {
+    while (1) {
+        if ((ch = inbuf->sbumpc()) != EOF && 
+            (cash[ch] == IDEN || (cash[ch] == CONST && ch != '.'))) {
             str += ch;
         } else {
             inbuf->sputbackc(ch);
             unordered_map<string, int>::iterator it = ListResWord.find(str);
             if (it != ListResWord.end()) {
-                return lexem(it->second, "");
+                return lexem((NumLex)it->second, "");
             } else {
                 return lexem(IND, str);
             }
         }
     }
-    return lexem(0,"");
 }
 lexem HandlerSpecialSymbol(filebuf* inbuf, char *cash) { 
     char ch = inbuf->sbumpc();
@@ -181,17 +181,17 @@ lexem HandlerSpecialSymbol(filebuf* inbuf, char *cash) {
     }
 }
 lexem HandlerUnknown      (filebuf* inbuf, char *cash){
-    string str;
     char ch = inbuf->sbumpc();
-
+    string str; 
+    str += ch;
     while ((ch = inbuf->sbumpc()) != EOF) {
-        if (AssignClass(cash, ch) < SP_SY) {
+        if (AssignClass(cash, ch) <= SP_SY) {
             inbuf->sputbackc(ch);
             return lexem(ERR, str);
         } else {
             str += ch;  
         }
-    } 
+    }
     return lexem(ERR, str);
 }
 
@@ -217,10 +217,10 @@ void PrintLex(list<lexem> lst) {
     }
 }
 
-void PrintErr(list<lexem> lst) {
+void PrintErr(list<pair<int, string>> lst) {
     cout << "\n\n" << "Error lexem found:" << endl;
     for (auto& it: lst) {
-        cout << "line: " << (int)it._id << ":  \"" << it._str << "\"" << endl;
+        cout << "line: " << it.first << ":  \"" << it.second << "\"" << endl;
     }
 }
 
@@ -229,7 +229,7 @@ int main() {
     char cash[SIZE_CASH_TABLE];
     char symbol;
     list<lexem> LstLex;
-    list<lexem> BufErr;
+    list<pair<int, string>> BufErr;
     int line = 1;
     int ClassLex;
     init(cash);    
@@ -246,9 +246,9 @@ int main() {
         lexem Lex = lexHandler[AssignClass(cash, inbuf->sgetc())] (inbuf, cash);
         ClassLex = (Lex._id & 0xF0) >> 4;
         if (ClassLex == ERR_C) {
-            BufErr.push_back(lexem(line, Lex._str));
-        } else if (ClassLex == SP_SY && (Lex._id & 0xF) >= SEPR) {
-            if ((Lex._id & 0xF) == SEP_n) {
+            BufErr.push_back(pair<int, string>(line, Lex._str));
+        } else if (ClassLex == SP_SY && Lex._id >= SEPR) {
+            if (Lex._id == SEP_n) {
                 line++;
             } //else don't add lexem in the list
         } else {
