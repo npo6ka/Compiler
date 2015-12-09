@@ -1,74 +1,85 @@
-#ifndef LEXIC
+#pragma once
 #include <string>
+#include <list>
 
 using namespace std;
 
 #define NUM_CLASS_LEX 6
 #define SIZE_CASH_TABLE 256
 
-enum Class{
-    UNK_C = 0,
-    AS_OP = 1,
-    LO_OP = 2,
-    SP_SY = 3,
-    CONST = 4,
-    IDEN  = 5,
-    RES_W = 6,
-    ERR_C = 7,разность
+enum ClassLex 
+{
+    UNK_C,
+    AS_OP,
+    LO_OP,
+    SP_SY,
+    CONST,
+    IDEN,
+    RES_W,
+    ERR_C,
+    SIZE_C
 };
 
-enum NumLex{
-    UNK    = 0xF + (UNK_C << 4), 
+enum NumLex 
+{
+    UNK,
 
     //class Assignment operation
-    ASIG   = 0x0 + (AS_OP << 4),
-    SUM    = 0x1 + (AS_OP << 4),
-    DIFF   = 0x2 + (AS_OP << 4),
-    MULT   = 0x3 + (AS_OP << 4),
-    DIVI   = 0x4 + (AS_OP << 4),
+    ASIG,
+    SUM,
+    DIFF,
+    MULT,
+    DIVI,
 
     //class Logical Expression
-    BN_AND = 0x0 + (LO_OP << 4),
-    LO_AND = 0x1 + (LO_OP << 4),
-    BN_OR  = 0x2 + (LO_OP << 4),
-    LO_OR  = 0x3 + (LO_OP << 4),
+    BN_AND,
+    LO_AND,
+    BN_OR,
+    LO_OR,
 
     //class special symbol
-    LFB    = 0x0 + (SP_SY << 4), //left curly brace
-    RFB    = 0x1 + (SP_SY << 4), //right
-    LF_PR  = 0x2 + (SP_SY << 4), //left parenthesis
-    RG_PR  = 0x3 + (SP_SY << 4),
-    SEMIC  = 0x4 + (SP_SY << 4), //semicolon
-    SEPR   = 0x5 + (SP_SY << 4),
-    SEP_n  = 0x6 + (SP_SY << 4),
+    LCB,    //left curly brace
+    RCB,    //right
+    LF_PR,  //left parenthesis
+    RG_PR,
+    SEMIC,  //semicolon
+    SEPR,
+    SEP_n,
 
     //class const
-    C_INT  = 0x0 + (CONST << 4),
-    C_FLT  = 0x1 + (CONST << 4),
+    C_INT,
+    C_FLT,
 
     //class indificator
-    IND    = 0x0 + (IDEN << 4),
+    IND,
 
     //class reserved word
-    IF     = 0x0 + (RES_W << 4),
-    ELSE   = 0x1 + (RES_W << 4),
-    FOR    = 0x2 + (RES_W << 4),
-    IN     = 0x3 + (RES_W << 4),
-    RETURN = 0x4 + (RES_W << 4),
-    WITH   = 0x5 + (RES_W << 4),
-    INT    = 0x6 + (RES_W << 4),
-    FLOAT  = 0x7 + (RES_W << 4),
+    IF,
+    ELSE,
+    FOR,
+    IN,
+    RETURN,
+    WITH,
+    INT,
+    FLOAT,
 
     //class Error
-    ERR    = 0x0 + (ERR_C << 4),
+    ERR,
+    AMOU_L,
 };
 
-class lexem {
+class lexem 
+{
 public:
     NumLex _id;
+    ClassLex _class;
     string _str;
-    lexem(NumLex i, string str): _id(i), _str(str) {}
+    int _line;
+
+    lexem(NumLex id, ClassLex cl, string str, int line): _id(id), _class(cl), _str(str), _line(line) {}
+    lexem(NumLex id, ClassLex cl, string str): _id(id), _class(cl), _str(str), _line(0) {}
     ~lexem() {}
 };
 
-#endif // !LEXIC
+bool lexical_analyzer(list<lexem> &);
+
