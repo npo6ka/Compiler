@@ -60,8 +60,8 @@ enum NumLex
     IN,
     RETURN,
     WITH,
-    INT,
-    FLOAT,
+    //INT,
+    //FLOAT,
 
     //class Error
     ERR,

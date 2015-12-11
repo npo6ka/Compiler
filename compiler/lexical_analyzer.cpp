@@ -51,10 +51,10 @@ void init(char *cash) {
     ListResWord["RETURN"] = RETURN;
     ListResWord["with"] = WITH;
     ListResWord["WITH"] = WITH;
-    ListResWord["int"] = INT;
+    /*ListResWord["int"] = INT;
     ListResWord["INT"] = INT;
     ListResWord["float"] = FLOAT;
-    ListResWord["FLOAT"] = FLOAT;
+    ListResWord["FLOAT"] = FLOAT;*/
 }
 
 lexem HandlerConst        (filebuf* inbuf, char *cash) {
@@ -222,8 +222,7 @@ void PrintLex(list<lexem> lst) {
         "{      ",  "}      ", "(      ", ")      ", ";      ", "", "", ""                                 //class special symbol
         "", "",                                                                                 //class const
         "",                                                                                     //class indificator
-        "if     ",  "else   ", "for    ", "in     ", "return ", "with   ", "INT    ", "FLOAT  " //class reserved word
-                                                                                              //Error
+        "if     ",  "else   ", "for    ", "in     ", "return ", "with   ",//"INT    ", "FLOAT  "//class reserved word
     };
 
     cout << "List lexem:" << endl;
