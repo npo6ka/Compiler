@@ -77,7 +77,8 @@ lexem HandlerConst        (filebuf* inbuf, char *cash) {
     string str = "";
     char ch;
 
-    while ((ch = inbuf->sbumpc()) != EOF) {
+    while (1) {
+        ch = inbuf->sbumpc();
         if (ch >= '0' && ch <= '9') {
             stat = tab[abs(stat)][0];
         } else   if (ch == '+' || ch == '-') {
@@ -215,11 +216,11 @@ void PrintLex(list<lexem> lst) {
                           "constant          ", 
                           "identificator     ", 
                           "reserved word     "};
-    char *output[AMOU_L-1] = {
+    char *output[AMOU_TR - 1] = {
         "",
         "=      ",  "+      ", "-      ", "*      ", "/      ",                                 //class Assignment operation
         "&      ",  "&&     ", "|      ", "||     ",                                            //class Logical Expression
-        "{      ",  "}      ", "(      ", ")      ", ";      ", "", "", ""                                 //class special symbol
+        "{      ",  "}      ", "(      ", ")      ", ";      ",                              //class special symbol
         "", "",                                                                                 //class const
         "",                                                                                     //class indificator
         "if     ",  "else   ", "for    ", "in     ", "return ", "with   ",//"INT    ", "FLOAT  "//class reserved word

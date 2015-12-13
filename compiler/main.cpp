@@ -5,5 +5,6 @@
 int main () {
     list<lexem> LstLex;
     if (!lexical_analyzer(LstLex)) return 0;
+    if (!parser(LstLex)) return 0;
     return 1;
 }

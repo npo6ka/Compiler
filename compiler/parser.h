@@ -1,4 +1,8 @@
 #pragma once
 #include "lexical_analyzer.h"
+#include <stack>
 
-bool parser(list<lexem> &LstLex);
+typedef list<lexem>::iterator Lex;
+typedef stack<NumLex> StLx;
+
+bool parser(list<lexem>);

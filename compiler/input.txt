@@ -1,3 +1,13 @@
-123.123E-50=|&123.123/.E-50=&&sdfg{int}345if(123.123E-50||
-r.wer}else=123.123Eg-50}123.1++++}    else
-?}fdgdfgdfg
+if (asdas *= asd)  {}
+if (132 & 12.2 || 131 & 2) {
+    for (1; 1; 1)
+        for (asd in 1) return ;
+} else { 
+    return 0;
+}
+with ( fh && 3 | 5 || sdf & 23.567E-23 && 23) return ;;
+
+if (asd /= 123.45E50) {
+    asd /= 111
+    return asd;
+}

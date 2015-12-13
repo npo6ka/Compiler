@@ -43,8 +43,6 @@ enum NumLex
     LF_PR,  //left parenthesis
     RG_PR,
     SEMIC,  //semicolon
-    SEPR,
-    SEP_n,
 
     //class const
     C_INT,
@@ -64,8 +62,51 @@ enum NumLex
     //FLOAT,
 
     //class Error
-    ERR,
-    AMOU_L,
+    ERR, //equal -|
+
+    //non-terminal
+    PR,
+    SL,
+    ST,
+    BL,
+    IS,
+    IES,
+    ITS,
+    RS,
+    RE,
+    WS,
+
+    FE,
+    P0FE,
+    P1FE,
+    P2FE,
+    P3FE,
+    P4FE,
+    ES,
+    EIP,
+    LPAE,
+
+    EX,
+    AE,
+    OP,
+    LOE,
+    LAE,
+    BOE,
+    BAE,
+    EE,
+    AR,
+    v,
+
+    //total count
+    TOTAL,
+
+    //unnecessary symbol
+    SEPR,
+    SEP_n,
+
+    //processing value
+    AMOU_TR = ERR + 1,
+    AMOU_NTR = TOTAL - AMOU_TR,
 };
 
 class lexem 
