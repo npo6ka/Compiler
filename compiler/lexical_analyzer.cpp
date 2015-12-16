@@ -235,7 +235,7 @@ void PrintLex(list<lexem> lst) {
 void PrintErr(list<lexem> lst) {
     cout << "\n\n" << "Error lexem found:" << endl;
     for (auto& it: lst) {
-        cout << "line: " << it._line << ":  \"" << it._str << "\"" << endl;
+        cout << "lexical error: line: " << it._line << ":  \"" << it._str << "\"" << endl;
     }
 }
 
@@ -264,6 +264,7 @@ bool lexical_analyzer(list<lexem> &LstLex) {
                 line++;
             } //else don't add lexem in the list
         } else {
+            Lex._line = line;
             LstLex.push_back(Lex);
         }  
     }

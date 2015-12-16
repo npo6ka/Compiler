@@ -5,9 +5,11 @@ if (132 & 12.2 || 131 & 2) {
 } else { 
     return 0;
 }
-with ( fh && 3 | 5 || sdf & 23.567E-23 && 23) return ;;
+with ( fh && 3 | 5 || sdf & 23.567E-23 && 23) return asd asd;;
 
-if (asd /= 123.45E50) {
+if (asd /= 123.45Edsf50) {
     asd /= 111
-    return asd;
+    return asd asd;
 }
+
+for (1; id *= sdf | wer || 1 & wer; 1.213E-50) frt -= fgt
